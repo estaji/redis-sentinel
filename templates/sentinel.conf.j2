@@ -1,0 +1,15 @@
+port 26379
+loglevel notice
+dir "/data"
+sentinel monitor redis_primary {{ master_node_ip }} 6379 2
+sentinel down-after-milliseconds redis_primary 5000
+sentinel parallel-syncs redis_primary 2
+sentinel failover-timeout redis_primary 10000
+sentinel announce-ip "{{ ansible_default_ipv4.address }}"
+sentinel announce-port 26379
+requirepass "{{ REDIS_PASSWORD }}"
+sentinel auth-pass redis_primary {{ REDIS_PASSWORD }}
+protected-mode no
+sentinel sentinel-pass {{ REDIS_PASSWORD }}
+sentinel auth-user redis_primary {{ REDIS_USERNAME }}
+user {{ REDIS_USERNAME }} on sanitize-payload >{{ REDIS_PASSWORD }} ~* &* +@all

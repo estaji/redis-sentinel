@@ -1,0 +1,5 @@
+---
+dir: /opt/redis-sentinel
+password: COMPLEXp@ssw0rd
+maxmemory: 8gb
+username: myuser

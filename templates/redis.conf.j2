@@ -1,0 +1,18 @@
+port 6379
+loglevel warning
+save 3600 1
+save 300 100
+save 60 10000
+dir "/data"
+min-replicas-to-write 1
+min-replicas-max-lag 10
+appendonly yes
+appendfilename "appendonly.aof"
+requirepass "{{ REDIS_PASSWORD }}"
+masterauth "{{ REDIS_PASSWORD }}"
+replica-serve-stale-data no
+maxmemory {{ MAXMEMORY }}
+user {{ REDIS_USERNAME }} on sanitize-payload >{{ REDIS_PASSWORD }} ~* &* +@all
+{% if master_node_ip != ansible_default_ipv4.address %}
+slaveof {{ master_node_ip }} 6379
+{% endif %}

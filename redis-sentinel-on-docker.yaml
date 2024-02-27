@@ -1,0 +1,73 @@
+---
+  - name: setup redis-sentinel on three identical nodes (1 master, 2 slaves)
+    hosts: redis
+    become: yes
+    tags: install-redis-sentinel
+    vars_files:
+      - config.yaml
+    vars:
+      DIR: "{{ dir }}"
+      REDIS_PASSWORD: "{{ password }}"
+      REDIS_USERNAME: "{{ username }}"
+      MAXMEMORY: "{{ maxmemory }}"
+
+    tasks:
+      - name: ensure docker is installed
+        block:
+          - name: check docker command
+            ansible.builtin.shell: "which docker"
+            ignore_errors: yes
+            register: check_docker
+          
+          - name: exit if docker is not installed
+            when: check_docker.failed == true
+            ansible.builtin.fail:
+              msg: "Docker is not installed. Please install docker, then retry again."
+
+      - name: create project directory
+        block:
+          - name: create redis directory
+            ansible.builtin.file:
+              path: "{{ DIR }}/config-files/redis"
+              state: directory
+          - name: create sentinel directory
+            ansible.builtin.file:
+              path: "{{ DIR }}/config-files/sentinel"
+              state: directory
+          - name: create data directory
+            ansible.builtin.file:
+              path: "{{ DIR }}/data"
+              state: directory
+
+      - name: select master node randomly
+        run_once: yes
+        ansible.builtin.set_fact:
+          master_node_ip: "{{ ansible_default_ipv4.address }}"
+
+      - name: copy redis config file
+        ansible.builtin.template:
+          src: templates/redis.conf.j2
+          dest: "{{ DIR }}/config-files/redis/redis.conf"
+
+      - name: copy sentinel config file
+        ansible.builtin.template:
+          src: templates/sentinel.conf.j2
+          dest: "{{ DIR }}/config-files/sentinel/sentinel.conf"
+
+      - name: fix config files permission
+        ansible.builtin.shell: "chmod -R 777 {{ DIR }}/config-files"
+
+      - name: copy docker-compose file
+        ansible.builtin.template:
+          src: templates/docker-compose.yaml.j2
+          dest: "{{ DIR }}/docker-compose.yaml"
+
+      - name: remove old containers
+        ignore_errors: yes
+        ansible.builtin.shell:
+          cmd: 'docker ps --filter "name=redis" --filter "name=sentinel" -aq | xargs docker stop | xargs docker rm'
+
+      - name: docker compose up
+        ansible.builtin.shell:
+          cmd: "docker compose -f {{ DIR }}/docker-compose.yaml up -d"
+
