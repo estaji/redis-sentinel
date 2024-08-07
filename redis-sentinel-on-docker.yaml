@@ -55,7 +55,7 @@
           dest: "{{ DIR }}/config-files/sentinel/sentinel.conf"
 
       - name: fix config files permission
-        ansible.builtin.shell: "chmod -R 777 {{ DIR }}/config-files"
+        ansible.builtin.shell: "chown -R 999:999 {{ DIR }}/config-files"
 
       - name: copy docker-compose file
         ansible.builtin.template:
